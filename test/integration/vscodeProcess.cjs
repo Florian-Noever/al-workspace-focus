@@ -1,8 +1,11 @@
 const { spawn, spawnSync } = require('node:child_process');
 const { setTimeout: delay } = require('node:timers/promises');
 
+// Linux CI users cannot start Chromium's setuid or namespace sandbox; @vscode/test-electron passes the same flags.
+const sandboxArgs = process.platform === 'linux' ? ['--no-sandbox', '--disable-gpu-sandbox'] : [];
+
 function launchVSCode(executable, args, { env = {}, mirrorOutput = false } = {}) {
-    const child = spawn(executable, [...args, '--force-renderer-accessibility'], { env: { ...process.env, ...env }, shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: false });
+    const child = spawn(executable, [...args, ...sandboxArgs, '--force-renderer-accessibility'], { env: { ...process.env, ...env }, shell: false, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: false });
     let output = '';
     const state = { error: null, finished: false };
     function capture(bytes, stream) {

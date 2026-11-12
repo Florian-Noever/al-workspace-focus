@@ -1,6 +1,7 @@
 import { builtinModules } from 'node:module';
 
 import js from '@eslint/js';
+import { defineConfig } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 const nodeImports = [...new Set(builtinModules.flatMap(name => [name, `node:${name}`]))].map(name => ({
@@ -8,7 +9,7 @@ const nodeImports = [...new Set(builtinModules.flatMap(name => [name, `node:${na
     message: 'Production runs in the browser worker. Use workspace.fs, vscode.Uri and Web APIs instead of Node builtins.'
 }));
 
-export default tseslint.config(
+export default defineConfig(
     {
         ignores: ['node_modules/**', 'out/**', 'test/out/**', '.vscode-test/**', 'coverage/**', 'artifacts/**', '.focussed/**']
     },
@@ -28,16 +29,9 @@ export default tseslint.config(
             }
         }
     },
-    ...tseslint.configs.strictTypeChecked.map(config => ({
-        ...config,
-        files: ['**/*.ts']
-    })),
-    ...tseslint.configs.stylisticTypeChecked.map(config => ({
-        ...config,
-        files: ['**/*.ts']
-    })),
     {
-        files: ['**/*.ts'],
+        files: ['**/*.ts', '**/*.mts'],
+        extends: [tseslint.configs.strictTypeChecked, tseslint.configs.stylisticTypeChecked],
         languageOptions: {
             parserOptions: {
                 projectService: true,

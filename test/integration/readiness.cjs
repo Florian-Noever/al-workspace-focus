@@ -108,7 +108,7 @@ async function main() {
             try {
                 await writeFile(path.join(directory, 'ui-state.txt'), await evaluate(client, 'document.body.innerText'));
             } catch (diagnosticError) {
-                throw new AggregateError([error, diagnosticError], 'The readiness check and its owned UI diagnostic failed.');
+                throw new AggregateError([error, diagnosticError], 'The readiness check and its owned UI diagnostic failed.', { cause: diagnosticError });
             }
         }
         throw error;

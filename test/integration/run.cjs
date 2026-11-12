@@ -43,11 +43,7 @@ async function main() {
     let launched;
     let passed = false;
     try {
-        const args = [fixture.workspaceFile, `--user-data-dir=${profile}`, `--extensions-dir=${extensions}`, '--skip-welcome', '--skip-release-notes', '--disable-updates', '--new-window'];
-        if (process.platform === 'linux' && process.getuid?.() === 0) {
-            args.push('--no-sandbox');
-        }
-        launched = launchVSCode(executable, args);
+        launched = launchVSCode(executable, [fixture.workspaceFile, `--user-data-dir=${profile}`, `--extensions-dir=${extensions}`, '--skip-welcome', '--skip-release-notes', '--disable-updates', '--new-window']);
         const deadline = Date.now() + 120000;
         let result;
         while (Date.now() < deadline) {

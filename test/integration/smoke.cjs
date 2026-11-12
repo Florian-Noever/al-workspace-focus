@@ -34,7 +34,7 @@ async function main() {
         'security.workspace.trust.startupPrompt': 'never',
         'extensions.ignoreRecommendations': true
     }, null, 4) + '\n');
-    const launch = target => launchVSCode(executable, [target, `--user-data-dir=${profile}`, `--extensions-dir=${extensions}`, `--extensionDevelopmentPath=${fixture.driver}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', '--skip-welcome', '--skip-release-notes', '--disable-updates', '--locale=en', '--new-window', ...process.platform === 'linux' && process.getuid?.() === 0 ? ['--no-sandbox'] : []]);
+    const launch = target => launchVSCode(executable, [target, `--user-data-dir=${profile}`, `--extensions-dir=${extensions}`, `--extensionDevelopmentPath=${fixture.driver}`, '--remote-debugging-port=0', '--remote-debugging-address=127.0.0.1', '--skip-welcome', '--skip-release-notes', '--disable-updates', '--locale=en', '--new-window']);
     let launched = launch(fixture.original);
     let passed = false;
     let recorded;

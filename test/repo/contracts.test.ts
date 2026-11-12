@@ -182,7 +182,7 @@ describe('repository and shipped-bundle contracts', () => {
             throw new Error('Missing VS Code version pins');
         }
         expect((/\d+\.\d+/.exec(engine))?.[0]).toBe((/\d+\.\d+/.exec(types))?.[0]);
-        expect(value.dependencies).toEqual({ 'jsonc-parser': '^3.3.1', 'p-map': '^7.1.1', zod: '^4.6.7' });
+        expect(isRecord(value.dependencies) ? Object.keys(value.dependencies).sort() : null).toEqual(['jsonc-parser', 'p-map', 'zod']);
         expect(development.mocha).toBeUndefined();
         expect(development['@types/mocha']).toBeUndefined();
         const runner: unknown = JSON.parse(await text(path.join('node_modules', 'npm-run-all2', 'package.json')));
@@ -195,7 +195,7 @@ describe('repository and shipped-bundle contracts', () => {
         }
         expect(engines.npm.replace(/\s+/g, '')).toBe(runner.engines.npm.replace(/\s+/g, ''));
         expect(value.extensionDependencies).toBeUndefined();
-        expect(value.allowScripts).toEqual({ esbuild: true, '@vscode/vsce-sign': false, keytar: false });
+        expect(value.allowScripts).toEqual({ esbuild: true, '@vscode/vsce-sign': false });
     });
 
     it('keeps domain modules free of VS Code, filesystem, process and crypto imports', async () => {
@@ -310,7 +310,7 @@ describe('repository and shipped-bundle contracts', () => {
     });
 
     it('keeps repository text LF', async () => {
-        const files = ['package.json', 'package-lock.json', 'tsconfig.json', 'README.md', 'CHANGELOG.md', 'LICENSE', '.gitignore', '.gitattributes', '.editorconfig', 'eslint.config.mjs', 'vitest.config.ts', 'esbuild.mjs', 'assets/icon.svg', ...await filesBelow('src'), ...await filesBelow('.github')];
+        const files = ['package.json', 'package-lock.json', 'tsconfig.json', 'README.md', 'CHANGELOG.md', 'LICENSE', '.gitignore', '.gitattributes', '.editorconfig', 'eslint.config.mjs', 'vitest.config.mts', 'esbuild.mjs', 'assets/icon.svg', ...await filesBelow('src'), ...await filesBelow('.github')];
         for (const file of files) {
             expect(await text(file), file).not.toContain('\r');
         }

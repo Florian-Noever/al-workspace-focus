@@ -153,7 +153,7 @@ export class FocusCache {
             try {
                 await stage.remove();
             } catch (error) {
-                throw new AggregateError([failure, error], `Cache staging cleanup failed: ${errorMessage(error, 'unknown cleanup error')}`);
+                throw new AggregateError([failure, error], `Cache staging cleanup failed: ${errorMessage(error, 'unknown cleanup error')}`, { cause: error });
             }
             throw failure;
         }

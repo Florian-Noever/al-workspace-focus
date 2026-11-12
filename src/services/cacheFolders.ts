@@ -28,7 +28,7 @@ async function removeTemporary(uri: vscode.Uri, failure: unknown): Promise<void>
     try {
         await orMissing(vscode.workspace.fs.delete(uri, { recursive: false }));
     } catch (error) {
-        throw new AggregateError(failure === undefined ? [error] : [failure, error], `Cache setup cleanup failed: ${errorMessage(error, 'unknown cleanup error')}`);
+        throw new AggregateError(failure === undefined ? [error] : [failure, error], `Cache setup cleanup failed: ${errorMessage(error, 'unknown cleanup error')}`, { cause: error });
     }
 }
 
