@@ -151,7 +151,7 @@
         "@types/vscode": "~1.134.0",
         "@vscode/test-electron": "^2.5.2",
         "@vscode/vsce": "^3.6.2",
-        "esbuild": "^0.25.12",
+        "esbuild": "^0.28.2",
         "eslint": "^9.39.1",
         "generate-license-file": "^4.2.5",
         "npm-run-all2": "^9.0.4",
