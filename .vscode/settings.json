@@ -1,0 +1,21 @@
+{
+    "files.exclude": {
+        "out": true,
+        "test/out": true,
+        "node_modules": true,
+        "coverage": true,
+        "artifacts": true,
+        ".focussed": true,
+        ".vscode-test": true
+    },
+    "search.exclude": {
+        "out": true,
+        "test/out": true,
+        "node_modules": true,
+        "coverage": true,
+        "artifacts": true,
+        ".focussed": true,
+        ".vscode-test": true
+    },
+    "js/ts.tsc.autoDetect": "off"
+}

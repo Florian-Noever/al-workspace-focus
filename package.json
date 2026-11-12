@@ -1,0 +1,162 @@
+{
+    "name": "al-workspace-focus",
+    "displayName": "AL Workspace Focus",
+    "description": "Focus an AL workspace on selected apps, their local dependencies and optional matching tests without changing the original workspace.",
+    "version": "1.0.0",
+    "publisher": "Florian-Noever",
+    "license": "MIT",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Florian-Noever/al-workspace-focus"
+    },
+    "bugs": {
+        "url": "https://github.com/Florian-Noever/al-workspace-focus/issues"
+    },
+    "homepage": "https://github.com/Florian-Noever/al-workspace-focus",
+    "qna": "https://github.com/Florian-Noever/al-workspace-focus/issues",
+    "markdown": "github",
+    "engines": {
+        "vscode": "^1.134.0",
+        "node": "^22.22.2 || ^24.15.0 || >=26.0.0",
+        "npm": ">=10"
+    },
+    "categories": [
+        "Programming Languages",
+        "Other"
+    ],
+    "keywords": [
+        "AL",
+        "AL Language",
+        "Business Central",
+        "Dynamics 365",
+        "workspace",
+        "dependencies",
+        "focus"
+    ],
+    "browser": "./out/extension.js",
+    "icon": "assets/icon-x512.png",
+    "activationEvents": [
+        "*"
+    ],
+    "capabilities": {
+        "untrustedWorkspaces": {
+            "supported": "limited",
+            "description": "Creating or refreshing a focus requires a trusted source. Validated Unfocus and cache diagnostics remain available."
+        },
+        "virtualWorkspaces": {
+            "supported": false,
+            "description": "AL Workspace Focus runs in the browser extension host and requires a local or remote filesystem-backed workspace."
+        }
+    },
+    "contributes": {
+        "commands": [
+            {
+                "command": "alWorkspaceFocus.focus",
+                "title": "Focus on Apps...",
+                "category": "AL Workspace Focus",
+                "enablement": "alWorkspaceFocus.ready"
+            },
+            {
+                "command": "alWorkspaceFocus.unfocus",
+                "title": "Unfocus",
+                "category": "AL Workspace Focus",
+                "enablement": "alWorkspaceFocus.active"
+            },
+            {
+                "command": "alWorkspaceFocus.refresh",
+                "title": "Refresh Focus",
+                "category": "AL Workspace Focus",
+                "enablement": "alWorkspaceFocus.active && alWorkspaceFocus.ready"
+            }
+        ],
+        "menus": {
+            "explorer/context": [
+                {
+                    "command": "alWorkspaceFocus.focus",
+                    "when": "resourceFilename == app.json && alWorkspaceFocus.ready",
+                    "group": "alWorkspaceFocus@1"
+                }
+            ],
+            "editor/context": [
+                {
+                    "command": "alWorkspaceFocus.focus",
+                    "when": "resourceFilename == app.json && alWorkspaceFocus.ready",
+                    "group": "alWorkspaceFocus@1"
+                }
+            ]
+        },
+        "configuration": {
+            "title": "AL Workspace Focus",
+            "properties": {
+                "alWorkspaceFocus.includeTests": {
+                    "type": "boolean",
+                    "default": false,
+                    "scope": "window",
+                    "markdownDescription": "Automatically include a matching test app for each explicitly selected production app. Required and explicitly selected test apps are always included. Only apps listed in the original workspace are considered."
+                },
+                "alWorkspaceFocus.showStartupNotification": {
+                    "type": "boolean",
+                    "default": true,
+                    "scope": "window",
+                    "markdownDescription": "Show a notification once per extension activation after Focus availability has been published to the UI. Open or reopen the app.json context menu after the message. This does not mean AL project loading has finished."
+                }
+            }
+        }
+    },
+    "files": [
+        "LICENSE",
+        "README.md",
+        "CHANGELOG.md",
+        "assets/icon-x512.png",
+        "assets/icon-x48.png",
+        "out/extension.js",
+        "out/THIRD-PARTY-NOTICES.txt"
+    ],
+    "allowScripts": {
+        "esbuild": true,
+        "@vscode/vsce-sign": false,
+        "keytar": false
+    },
+    "scripts": {
+        "check-types": "node node_modules/typescript/bin/tsc --noEmit -p tsconfig.browser.json && node node_modules/typescript/bin/tsc --noEmit",
+        "lint": "node node_modules/eslint/bin/eslint.js . --max-warnings 0",
+        "bundle": "node esbuild.mjs",
+        "compile": "node node_modules/npm-run-all2/bin/run-s/index.js check-types lint bundle",
+        "watch": "node node_modules/npm-run-all2/bin/run-p/index.js watch:esbuild watch:tsc watch:browser-types",
+        "watch:esbuild": "node esbuild.mjs --watch",
+        "watch:tsc": "node node_modules/typescript/bin/tsc --noEmit --watch --project tsconfig.json",
+        "watch:browser-types": "node node_modules/typescript/bin/tsc --noEmit --watch --project tsconfig.browser.json",
+        "test": "node node_modules/vitest/vitest.mjs run",
+        "test:watch": "node node_modules/vitest/vitest.mjs",
+        "test:data": "node node_modules/vitest/vitest.mjs run --project data",
+        "test:host": "node node_modules/vitest/vitest.mjs run --project host",
+        "test:repo": "node node_modules/vitest/vitest.mjs run --project repo",
+        "test:integration": "npm run bundle && node test/integration/run.cjs",
+        "test:integration:minimum": "npm run bundle && node test/integration/run.cjs --version 1.134.0",
+        "test:readiness": "npm run bundle && node test/integration/readiness.cjs",
+        "test:smoke": "npm run bundle && node test/integration/smoke.cjs",
+        "ci:check": "node node_modules/npm-run-all2/bin/run-s/index.js compile test:data test:host test:repo",
+        "vscode:prepublish": "npm run compile",
+        "package": "node node_modules/@vscode/vsce/vsce package --no-dependencies",
+        "package:list": "node node_modules/@vscode/vsce/vsce ls --no-dependencies"
+    },
+    "dependencies": {
+        "jsonc-parser": "^3.3.1",
+        "p-map": "^7.1.1",
+        "zod": "^4.6.7"
+    },
+    "devDependencies": {
+        "@eslint/js": "^9.39.1",
+        "@types/node": "^22.19.0",
+        "@types/vscode": "~1.134.0",
+        "@vscode/test-electron": "^2.5.2",
+        "@vscode/vsce": "^3.6.2",
+        "esbuild": "^0.25.12",
+        "eslint": "^9.39.1",
+        "generate-license-file": "^4.2.5",
+        "npm-run-all2": "^9.0.4",
+        "typescript": "~5.9.3",
+        "typescript-eslint": "^8.46.4",
+        "vitest": "^3.2.4"
+    }
+}

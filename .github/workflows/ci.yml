@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  extension:
+    uses: Florian-Noever/Florian-Noever/.github/workflows/vscode-extension-ci.yml@v1
+    with:
+      check-command: npm run ci:check
+      test-command: npm run test:integration
+      required-files: |
+        out/extension.js
+        out/THIRD-PARTY-NOTICES.txt
+        assets/icon-x512.png
+        assets/icon-x48.png
+        readme.md
+        LICENSE.txt
+      pack-dependencies: false
+  automerge:
+    needs: extension
+    permissions:
+      contents: write
+      pull-requests: write
+    uses: Florian-Noever/Florian-Noever/.github/workflows/dependabot-automerge.yml@v1

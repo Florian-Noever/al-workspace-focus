@@ -1,0 +1,64 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "watch",
+            "dependsOn": [
+                "npm: watch:esbuild",
+                "npm: watch:tsc",
+                "npm: watch:browser-types"
+            ],
+            "dependsOrder": "parallel",
+            "presentation": {
+                "reveal": "never"
+            },
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "npm: watch:esbuild",
+            "type": "npm",
+            "script": "watch:esbuild",
+            "isBackground": true,
+            "problemMatcher": "$esbuild-watch",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
+        {
+            "label": "npm: watch:tsc",
+            "type": "npm",
+            "script": "watch:tsc",
+            "isBackground": true,
+            "problemMatcher": "$tsc-watch",
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
+        {
+            "label": "npm: watch:browser-types",
+            "type": "npm",
+            "script": "watch:browser-types",
+            "isBackground": true,
+            "problemMatcher": {
+                "base": "$tsc-watch",
+                "owner": "typescript-browser"
+            },
+            "presentation": {
+                "group": "watch",
+                "reveal": "never"
+            }
+        },
+        {
+            "label": "Compile extension",
+            "type": "npm",
+            "script": "compile",
+            "group": "build",
+            "problemMatcher": ["$tsc", "$esbuild"]
+        }
+    ]
+}

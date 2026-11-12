@@ -1,0 +1,33 @@
+name: Publish Release
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: vscode-extension-publish
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  publish:
+    uses: Florian-Noever/Florian-Noever/.github/workflows/vscode-extension-publish.yml@v1
+    with:
+      check-command: npm run ci:check
+      test-command: npm run test:integration
+      required-files: |
+        out/extension.js
+        out/THIRD-PARTY-NOTICES.txt
+        assets/icon-x512.png
+        assets/icon-x48.png
+        readme.md
+        LICENSE.txt
+      pack-dependencies: false
+      vs-marketplace: true
+      open-vsx: true
+    secrets:
+      OPEN_VSX_TOKEN: ${{ secrets.OPEN_VSX_TOKEN }}
