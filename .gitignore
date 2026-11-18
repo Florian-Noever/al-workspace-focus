@@ -150,3 +150,6 @@ vite.config.ts.timestamp-*
 
 # VSCode
 *.vsix
+
+# Local agent guidance
+CLAUDE.md
