@@ -2,7 +2,7 @@
     "name": "al-workspace-focus",
     "displayName": "AL Workspace Focus",
     "description": "Focus an AL workspace on selected apps, their local dependencies and optional matching tests without changing the original workspace.",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "publisher": "Florian-Noever",
     "license": "MIT",
     "repository": {
