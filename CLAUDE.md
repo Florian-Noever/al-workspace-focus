@@ -58,6 +58,7 @@ Do not replace the workspace transformation with regex parsing or full `JSON.str
 ## Source and URI safeguards
 
 - Read only manifests directly belonging to roots listed in the original workspace. Do not replace this with `findFiles`, `workspaceContains` or a recursive repository scan.
+- Like VS Code, do not check listed folders for existence or type: a root whose `app.json` is not found, including a folder not created yet, stays as listed. A folder listed more than once is used only at its first entry. Malformed folder entries remain errors.
 - Retain `p-map`'s ordered mapping, concurrency 64, fail-fast behavior and AbortSignal. Start I/O inside the mapper. Preserve checks after in-flight reads and cancellation.
 - Load from the original origin when already focused, not the reduced workspace. Preserve both complete raw-content snapshots and the final source revalidation before opening; do not use timestamps or cached catalogs as substitutes.
 - Never save/discard dirty source editors, modify source AL settings, run builds, download dependencies or use `updateWorkspaceFolders` to implement Focus.

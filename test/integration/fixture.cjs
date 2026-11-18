@@ -51,7 +51,10 @@ async function createFixture(requestedDirectory, { authority = '', kind = 'works
             ...identities.map(identity => ({ path: `apps/${identity.folder}`, name: identity.folder, fixtureAttribute: true })),
             { path: 'apps/.resources', name: 'Resources' },
             { path: 'apps/.alpackages', name: 'Packages' },
-            { path: 'AI-Tools' }
+            { path: 'AI-Tools' },
+            // VS Code opens a folder that does not exist yet and ignores a repeated folder; Focus must accept both.
+            { path: 'apps/Planned', name: 'Planned' },
+            { path: 'apps/WMS', name: 'WMS', fixtureAttribute: true }
         ],
         settings: {
             'al.packageCachePath': './../.alpackages',
@@ -77,7 +80,7 @@ async function createFixture(requestedDirectory, { authority = '', kind = 'works
         originUri: uriFor(original, authority),
         focusAppUri: uriFor(path.join(directory, 'apps', selectedFolder, 'app.json'), authority),
         expectedAppCount: kind === 'folder' ? 1 : 2,
-        expectedRootCount: kind === 'folder' ? 1 : 5,
+        expectedRootCount: kind === 'folder' ? 1 : 6,
         sourceDigests,
         phase: 'focus',
         status: 'running',

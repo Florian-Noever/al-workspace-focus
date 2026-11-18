@@ -3,9 +3,12 @@ import path from 'node:path';
 
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { resolveFocus } from '../../src/al/dependencyGraph';
 import { containsUri, sameUri } from '../../src/host/browserHost';
 import { WorkspaceFiles } from '../../src/services/workspaceFiles';
 import { currentOrigin, filesystemHost, WorkspaceUris } from '../../src/services/workspaceOrigin';
+import { readJsoncObject } from '../../src/shared/jsonc';
+import { transformWorkspace } from '../../src/workspace/workspaceTransform';
 import { appId, manifestText } from '../support/fixtures';
 import { FileSystemError, FileType, resetVscode, setFile, setUriPlatform, Uri, workspace } from '../support/vscodeMock';
 
@@ -42,7 +45,7 @@ describe('source origins and direct-root catalogue I/O', () => {
         expect(workspace.fs.writeFile).not.toHaveBeenCalled();
         expect(workspace.fs.delete).not.toHaveBeenCalled();
         expect(workspace.fs.readFile.mock.calls.filter(([uri]) => uri.path.endsWith('/app.json'))).toHaveLength(2);
-        expect(workspace.fs.stat.mock.calls.map(([uri]) => uri.toString())).toEqual([Uri.file(path.join(base, '.resources')).toString()]);
+        expect(workspace.fs.stat).not.toHaveBeenCalled();
     });
 
     it('continues reading later roots while one early manifest is slow, without unbounded reads or reordering', async () => {
@@ -135,11 +138,33 @@ describe('source origins and direct-root catalogue I/O', () => {
         expect(workspace.fs.writeFile).not.toHaveBeenCalled();
     });
 
-    it('still rejects a missing manifest when its listed non-app root is a file', async () => {
+    it.each(['FileNotFound', 'FileNotADirectory'])('keeps listed roots that do not exist yet or are not folders as non-app roots without checking them: %s', async code => {
         const { files } = sourceFixture();
-        setFile(Uri.file(path.join(base, '.resources')), 'not a directory');
-        await expect(files.load(origin, new AbortController().signal)).rejects.toMatchObject({ code: 'invalid-root' });
-        expect(workspace.fs.writeFile).not.toHaveBeenCalled();
+        setFile(sourceUri, JSON.stringify({ folders: [{ path: 'WMS' }, { path: '.alpackages', name: 'Not created yet' }, { path: 'notes.txt' }] }));
+        const read = workspace.fs.readFile.getMockImplementation();
+        if (read === undefined) {
+            throw new Error('Missing filesystem mock');
+        }
+        workspace.fs.readFile.mockImplementation(uri => uri.path.endsWith('/notes.txt/app.json') ? Promise.reject(new FileSystemError(code)) : read(uri));
+        const catalog = await files.load(origin, new AbortController().signal);
+        expect(catalog.roots.map(root => [root.name, root.manifestText === null])).toEqual([['WMS', false], ['Not created yet', true], ['notes.txt', true]]);
+        expect(catalog.apps).toHaveLength(1);
+        expect(workspace.fs.stat).not.toHaveBeenCalled();
+    });
+
+    it('collapses a folder listed more than once to its first entry, as VS Code does, and leaves the repeats out of the focus', async () => {
+        const { files } = sourceFixture();
+        const bridge = { name: 'Bridge: EFM-CTS', path: 'WMS' };
+        setFile(sourceUri, JSON.stringify({ folders: [bridge, { path: 'Other' }, { path: '.scratch', name: '.scratch' }, bridge, { path: './Other', name: 'Repeat' }, { path: '.scratch', name: '.scratch' }] }));
+        setFile(Uri.file(path.join(base, 'Other', 'app.json')), manifestText({ id: appId(2), name: 'Other' }));
+        const catalog = await files.load(origin, new AbortController().signal);
+        expect(catalog.roots.map(root => [root.index, root.name])).toEqual([[0, 'Bridge: EFM-CTS'], [1, 'Other'], [2, '.scratch']]);
+        expect(workspace.fs.readFile.mock.calls.filter(([uri]) => uri.path.endsWith('/app.json'))).toHaveLength(3);
+        const focused = transformWorkspace(catalog, resolveFocus(catalog, [appId(1)], { includeTests: false }));
+        expect(readJsoncObject(focused.text, 'Focus').value.folders).toEqual([
+            { name: 'Bridge: EFM-CTS', path: path.join(base, 'WMS') },
+            { path: path.join(base, '.scratch'), name: '.scratch' }
+        ]);
     });
 
     it('rejects unsaved source workspace and manifest snapshots without saving them', async () => {
@@ -203,11 +228,9 @@ describe('source origins and direct-root catalogue I/O', () => {
         { folders: [{ name: 'No path' }] },
         { folders: [{ path: '${env:ROOT}/WMS' }] },
         { folders: [{ path: 'C:drive-relative' }] },
-        { folders: [{ path: 'Missing' }] },
         { folders: [{ path: 'WMS', name: '' }] },
-        { folders: [{ path: 'WMS' }, { path: './WMS' }] },
         { folders: [false] }
-    ])('rejects malformed, missing and duplicate listed roots', async ({ folders }) => {
+    ])('rejects malformed listed roots', async ({ folders }) => {
         const { files } = sourceFixture();
         setFile(sourceUri, JSON.stringify({ folders }));
         await expect(files.load(origin, new AbortController().signal)).rejects.toThrow();

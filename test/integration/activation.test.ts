@@ -23,7 +23,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         }
         assert(typeof control.originUri === 'string' && Array.isArray(control.sourceDigests), 'Missing fixture inputs');
         equal(vscode.workspace.workspaceFile?.path.toLowerCase(), vscode.Uri.parse(control.originUri).path.toLowerCase(), 'The source workspace was not opened');
-        equal(vscode.workspace.workspaceFolders?.length, 7, 'Wrong source root count');
+        equal(vscode.workspace.workspaceFolders?.length, 8, 'Wrong source root count');
         for (const entry of control.sourceDigests) {
             assert(isRecord(entry) && typeof entry.uri === 'string' && typeof entry.digest === 'string', 'Invalid fixture digest');
             equal(await digest(await vscode.workspace.fs.readFile(vscode.Uri.parse(entry.uri))), entry.digest, 'The source fixture was modified');

@@ -10,8 +10,15 @@ import type { WorkspaceUris } from './workspaceOrigin';
 
 import type { WorkspaceCatalog, WorkspaceOrigin, WorkspaceRoot } from '../shared/focusTypes';
 
+interface ListedRoot {
+    readonly index: number;
+    readonly uri: vscode.Uri;
+    readonly entry: Readonly<Record<string, unknown>>;
+}
+
+// POSIX hosts report a listed file as FileNotADirectory where Windows reports FileNotFound; neither root is an app.
 function isMissing(error: unknown): boolean {
-    return error instanceof vscode.FileSystemError && error.code === 'FileNotFound';
+    return error instanceof vscode.FileSystemError && (error.code === 'FileNotFound' || error.code === 'FileNotADirectory');
 }
 
 export class WorkspaceFiles {
@@ -57,32 +64,21 @@ export class WorkspaceFiles {
         return decodeUtf8(bytes, uri.toString());
     }
 
-    private async readRoot(origin: WorkspaceOrigin, value: unknown, index: number, signal: AbortSignal): Promise<WorkspaceRoot> {
+    private listRoot(origin: WorkspaceOrigin, value: unknown, index: number): ListedRoot {
         if (!isRecord(value)) {
             throw new FocusError('invalid-workspace', `Original folders[${index.toString()}] must contain an object.`);
         }
         if (value.name !== undefined && (typeof value.name !== 'string' || value.name.trim().length === 0)) {
             throw new FocusError('invalid-workspace', `Original folders[${index.toString()}].name must be a nonempty string.`);
         }
-        const uri = this.uris.resolveFolder(origin, value);
-        signal.throwIfAborted();
+        return { index, uri: this.uris.resolveFolder(origin, value), entry: value };
+    }
+
+    // Like VS Code, folders are not checked for existence: a root without app.json, even one not created yet, is kept as listed.
+    private async readRoot({ index, uri, entry }: ListedRoot, signal: AbortSignal): Promise<WorkspaceRoot> {
         const manifestUri = vscode.Uri.joinPath(uri, 'app.json');
         const manifestText = await this.manifestText(manifestUri, signal);
         signal.throwIfAborted();
-        // A readable manifest already requires a directory; only non-app roots need a separate stat.
-        if (manifestText === null) {
-            try {
-                const info = await vscode.workspace.fs.stat(uri);
-                if ((info.type & vscode.FileType.Directory) === 0) {
-                    throw new FocusError('invalid-root', `Listed root ${uri.toString()} is not a directory.`);
-                }
-            } catch (error) {
-                if (error instanceof FocusError) {
-                    throw error;
-                }
-                throw new FocusError('root-read', `Listed root ${uri.toString()} is missing or unreadable. Restore it or remove it from the original workspace before focusing.`);
-            }
-        }
         const folderName = this.uris.basename(uri);
         return {
             index,
@@ -90,8 +86,8 @@ export class WorkspaceFiles {
             manifestUri: manifestUri.toString(),
             absolutePath: this.uris.pathValue(uri),
             folderName,
-            name: typeof value.name === 'string' ? value.name : folderName,
-            entry: value,
+            name: typeof entry.name === 'string' ? entry.name : folderName,
+            entry,
             manifestText
         };
     }
@@ -116,16 +112,16 @@ export class WorkspaceFiles {
         if (value.settings !== undefined && !isRecord(value.settings)) {
             throw new FocusError('invalid-workspace', 'The original workspace settings must be an object.');
         }
-        const roots = await pMap(folderValues, (value: unknown, index) => this.readRoot(origin, value, index, signal), { concurrency: 64, stopOnError: true, signal });
-        signal.throwIfAborted();
-        const duplicates = new Set<string>();
-        for (const root of roots) {
-            const key = uriKey(vscode.Uri.parse(root.uri, true));
-            if (duplicates.has(key)) {
-                throw new FocusError('duplicate-root', `Original folder ${root.name} is listed more than once.`);
+        // VS Code opens a folder listed more than once only at its first entry, so later duplicates are left out of every focus.
+        const listed = new Map<string, ListedRoot>();
+        for (const root of folderValues.map((folder: unknown, index) => this.listRoot(origin, folder, index))) {
+            const key = uriKey(root.uri);
+            if (!listed.has(key)) {
+                listed.set(key, root);
             }
-            duplicates.add(key);
         }
+        const roots = await pMap(listed.values(), root => this.readRoot(root, signal), { concurrency: 64, stopOnError: true, signal });
+        signal.throwIfAborted();
         const catalog = createCatalog(origin, workspaceText, roots);
         this.assertCatalogSaved(catalog);
         if (origin.kind === 'workspace' && await this.readText(originUri, 'Original workspace', signal) !== workspaceText) {
